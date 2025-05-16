@@ -36,7 +36,7 @@ def unique_mask_values(idx, mask_dir, mask_suffix):
 
 
 class BasicDataset(Dataset):
-    def __init__(self, images_dir: str, mask_dir: str, scale: float = 1.0, mask_suffix: str = ''):
+    def __init__(self, images_dir: str, mask_dir: str, scale: float = 1.0, mask_suffix: str = '_pixels0'):
         self.images_dir = Path(images_dir)
         self.mask_dir = Path(mask_dir)
         assert 0 < scale <= 1, 'Scale must be between 0 and 1'
@@ -83,12 +83,15 @@ class BasicDataset(Dataset):
             if img.ndim == 2:
                 img = img[np.newaxis, ...]
             else:
-                img = img.transpose((2, 0, 1))
+                if img.ndim == 3:
+                    img = img.mean(axis=2).astype(np.uint8)  # Convert RGB to grayscale
 
-            if (img > 1).any():
-                img = img / 255.0
+                img = img[np.newaxis, ...]  # Add channel dimension (1, H, W)
 
-            return img
+                if (img > 1).any():
+                    img = img / 255.0
+
+                return img
 
     def __getitem__(self, idx):
         name = self.ids[idx]
