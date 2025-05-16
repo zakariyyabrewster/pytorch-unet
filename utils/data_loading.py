@@ -9,7 +9,7 @@ import logging
 from tqdm import tqdm
 from multiprocessing import Pool
 from functools import partial
-
+import logging
 
 def load_image(filename):
     return Image.open(filename)
