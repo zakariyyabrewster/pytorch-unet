@@ -5,7 +5,7 @@ from tqdm import tqdm
 
 from utils.dice_score import multiclass_dice_coeff, dice_coeff
 
-@torch.interference_mode()
+@torch.inference_mode()
 def evaluate(net, dataloader, device, amp):
     net.eval()
     num_val_batches = len(dataloader)
