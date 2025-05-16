@@ -1,18 +1,27 @@
+import logging
 import numpy as np
 import torch
 from PIL import Image
+from functools import lru_cache
+from functools import partial
+from itertools import repeat
+from multiprocessing import Pool
+from os import listdir
+from os.path import splitext, isfile, join
 from pathlib import Path
 from torch.utils.data import Dataset
-from os import listdir
-from os.path import isfile, join, splitext
-import logging
 from tqdm import tqdm
-from multiprocessing import Pool
-from functools import partial
-import logging
+
 
 def load_image(filename):
-    return Image.open(filename)
+    ext = splitext(filename)[1]
+    if ext == '.npy':
+        return Image.fromarray(np.load(filename))
+    elif ext in ['.pt', '.pth']:
+        return Image.fromarray(torch.load(filename).numpy())
+    else:
+        return Image.open(filename)
+
 
 def unique_mask_values(idx, mask_dir, mask_suffix):
     mask_file = list(mask_dir.glob(idx + mask_suffix + '.*'))[0]
@@ -25,8 +34,9 @@ def unique_mask_values(idx, mask_dir, mask_suffix):
     else:
         raise ValueError(f'Loaded masks should have 2 or 3 dimensions, found {mask.ndim}')
 
+
 class BasicDataset(Dataset):
-    def __init__(self, images_dir: str, mask_dir: str, scale: float = 1.0, mask_suffix: str = '_pixels0'):
+    def __init__(self, images_dir: str, mask_dir: str, scale: float = 1.0, mask_suffix: str = ''):
         self.images_dir = Path(images_dir)
         self.mask_dir = Path(mask_dir)
         assert 0 < scale <= 1, 'Scale must be between 0 and 1'
@@ -70,10 +80,10 @@ class BasicDataset(Dataset):
             return mask
 
         else:
-            if img.ndim == 3:
-                img = img.mean(axis=2).astype(np.uint8)  # Convert RGB to grayscale
-
-            img = img[np.newaxis, ...]  # Add channel dimension (1, H, W)
+            if img.ndim == 2:
+                img = img[np.newaxis, ...]
+            else:
+                img = img.transpose((2, 0, 1))
 
             if (img > 1).any():
                 img = img / 255.0

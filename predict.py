@@ -12,12 +12,16 @@ from utils.data_loading import BasicDataset
 from unet import UNet
 from utils.utils import plot_img_and_mask
 
-def predict_img(net, full_img, device, scale_factor=1, out_threshold=0.5):
+def predict_img(net,
+                full_img,
+                device,
+                scale_factor=1,
+                out_threshold=0.5):
     net.eval()
     img = torch.from_numpy(BasicDataset.preprocess(None, full_img, scale_factor, is_mask=False))
     img = img.unsqueeze(0)
     img = img.to(device=device, dtype=torch.float32)
-    
+
     with torch.no_grad():
         output = net(img).cpu()
         output = F.interpolate(output, (full_img.size[1], full_img.size[0]), mode='bilinear')
@@ -27,6 +31,7 @@ def predict_img(net, full_img, device, scale_factor=1, out_threshold=0.5):
             mask = torch.sigmoid(output) > out_threshold
 
     return mask[0].long().squeeze().numpy()
+
 
 def get_args():
     parser = argparse.ArgumentParser(description='Predict masks from input images')
@@ -46,11 +51,13 @@ def get_args():
     
     return parser.parse_args()
 
+
 def get_output_filenames(args):
     def _generate_name(fn):
         return f'{os.path.splitext(fn)[0]}_OUT.png'
 
     return args.output or list(map(_generate_name, args.input))
+
 
 def mask_to_image(mask: np.ndarray, mask_values):
     if isinstance(mask_values[0], list):
@@ -67,6 +74,7 @@ def mask_to_image(mask: np.ndarray, mask_values):
         out[mask == i] = v
 
     return Image.fromarray(out)
+
 
 if __name__ == '__main__':
     args = get_args()
