@@ -67,71 +67,86 @@ for url in valid_masks_urls:
     else:
         print(f"Failed to download: {url}")
 
-import os
-from PIL import Image
-import random
+def resize_folder_images(folder_path, size=(480, 480)):
+    folder = Path(folder_path)
+    for file in folder.iterdir():
+        if file.suffix.lower() in ['.png', '.jpg', '.jpeg', '.bmp']:
+            img = Image.open(file)
+            img = img.resize(size, resample=Image.NEAREST if 'mask' in str(folder) else Image.BICUBIC)
+            img.save(file)
 
-def get_image_mask_pairs(images_dir, masks_dir, valid_exts={'.png', '.jpg', '.jpeg'}):
-    pairs = []
-    for filename in os.listdir(images_dir):
-        base, ext = os.path.splitext(filename)
-        if ext.lower() in valid_exts:
-            image_path = os.path.join(images_dir, filename)
-            mask_path = os.path.join(masks_dir, base + '_pixels0.png')
-            if os.path.exists(mask_path):
-                pairs.append((image_path, mask_path))
-            else:
-                print(f"No mask found for {filename}")
-    return pairs
+# Resize images
+resize_folder_images('data/imgs', size=(480, 480))
 
-def resize_or_pad_image_and_mask(img: Image.Image, mask: Image.Image, size: int, seed=None):
-    if seed is not None:
-        random.seed(seed)
+# Resize masks (use NEAREST interpolation to preserve class labels)
+resize_folder_images('data/masks', size=(480, 480))
 
-    img = img.convert("L")
-    mask = mask.convert("L")
-    w, h = img.size
 
-    if w >= size and h >= size:
-        left = random.randint(0, w - size)
-        top = random.randint(0, h - size)
-        return img.crop((left, top, left + size, top + size)), mask.crop((left, top, left + size, top + size))
+# import os
+# from PIL import Image
+# import random
 
-    elif w < size and h < size:
-        bg_img = Image.new("L", (size, size), 0)
-        bg_mask = Image.new("L", (size, size), 0)
-        offset_x = random.randint(0, size - w)
-        offset_y = random.randint(0, size - h)
-        bg_img.paste(img, (offset_x, offset_y))
-        bg_mask.paste(mask, (offset_x, offset_y))
-        return bg_img, bg_mask
+# def get_image_mask_pairs(images_dir, masks_dir, valid_exts={'.png', '.jpg', '.jpeg'}):
+#     pairs = []
+#     for filename in os.listdir(images_dir):
+#         base, ext = os.path.splitext(filename)
+#         if ext.lower() in valid_exts:
+#             image_path = os.path.join(images_dir, filename)
+#             mask_path = os.path.join(masks_dir, base + '_pixels0.png')
+#             if os.path.exists(mask_path):
+#                 pairs.append((image_path, mask_path))
+#             else:
+#                 print(f"No mask found for {filename}")
+#     return pairs
 
-    else:
-        scale = size / w if w < size else size / h
-        new_w, new_h = int(w * scale), int(h * scale)
-        img = img.resize((new_w, new_h), Image.BILINEAR)
-        mask = mask.resize((new_w, new_h), Image.NEAREST)
+# def resize_or_pad_image_and_mask(img: Image.Image, mask: Image.Image, size: int, seed=None):
+#     if seed is not None:
+#         random.seed(seed)
 
-        if new_w >= size and new_h >= size:
-            left = random.randint(0, new_w - size)
-            top = random.randint(0, new_h - size)
-            return img.crop((left, top, left + size, top + size)), mask.crop((left, top, left + size, top + size))
-        else:
-            bg_img = Image.new("L", (size, size), 0)
-            bg_mask = Image.new("L", (size, size), 0)
-            offset_x = random.randint(0, size - new_w)
-            offset_y = random.randint(0, size - new_h)
-            bg_img.paste(img, (offset_x, offset_y))
-            bg_mask.paste(mask, (offset_x, offset_y))
-            return bg_img, bg_mask
+#     img = img.convert("L")
+#     mask = mask.convert("L")
+#     w, h = img.size
 
-# Process and overwrite
-image_mask_pairs = get_image_mask_pairs("data/imgs", "data/masks")
+#     if w >= size and h >= size:
+#         left = random.randint(0, w - size)
+#         top = random.randint(0, h - size)
+#         return img.crop((left, top, left + size, top + size)), mask.crop((left, top, left + size, top + size))
 
-for img_path, mask_path in image_mask_pairs:
-    img = Image.open(img_path)
-    mask = Image.open(mask_path)
-    processed_img, processed_mask = resize_or_pad_image_and_mask(img, mask, size=480)
+#     elif w < size and h < size:
+#         bg_img = Image.new("L", (size, size), 0)
+#         bg_mask = Image.new("L", (size, size), 0)
+#         offset_x = random.randint(0, size - w)
+#         offset_y = random.randint(0, size - h)
+#         bg_img.paste(img, (offset_x, offset_y))
+#         bg_mask.paste(mask, (offset_x, offset_y))
+#         return bg_img, bg_mask
+
+#     else:
+#         scale = size / w if w < size else size / h
+#         new_w, new_h = int(w * scale), int(h * scale)
+#         img = img.resize((new_w, new_h), Image.BILINEAR)
+#         mask = mask.resize((new_w, new_h), Image.NEAREST)
+
+#         if new_w >= size and new_h >= size:
+#             left = random.randint(0, new_w - size)
+#             top = random.randint(0, new_h - size)
+#             return img.crop((left, top, left + size, top + size)), mask.crop((left, top, left + size, top + size))
+#         else:
+#             bg_img = Image.new("L", (size, size), 0)
+#             bg_mask = Image.new("L", (size, size), 0)
+#             offset_x = random.randint(0, size - new_w)
+#             offset_y = random.randint(0, size - new_h)
+#             bg_img.paste(img, (offset_x, offset_y))
+#             bg_mask.paste(mask, (offset_x, offset_y))
+#             return bg_img, bg_mask
+
+# # Process and overwrite
+# image_mask_pairs = get_image_mask_pairs("data/imgs", "data/masks")
+
+# for img_path, mask_path in image_mask_pairs:
+#     img = Image.open(img_path)
+#     mask = Image.open(mask_path)
+#     processed_img, processed_mask = resize_or_pad_image_and_mask(img, mask, size=480)
     
-    processed_img.save(img_path)
-    processed_mask.save(mask_path)
+#     processed_img.save(img_path)
+#     processed_mask.save(mask_path)
