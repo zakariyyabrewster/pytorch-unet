@@ -66,7 +66,7 @@ for url in valid_masks_urls:
     else:
         print(f"Failed to download: {url}")
 
-def resize_folder_images(folder_path, size=(572, 572)):
+def resize_folder_images(folder_path, size=(480, 480)):
     folder = Path(folder_path)
     for file in folder.iterdir():
         if file.suffix.lower() in ['.png', '.jpg', '.jpeg', '.bmp']:
@@ -75,9 +75,9 @@ def resize_folder_images(folder_path, size=(572, 572)):
             img.save(file)
 
 # Resize images
-resize_folder_images('data/imgs', size=(572, 572))
+resize_folder_images('data/imgs', size=(480, 480))
 
 # Resize masks (use NEAREST interpolation to preserve class labels)
-resize_folder_images('data/masks', size=(572, 572))
+resize_folder_images('data/masks', size=(480, 480))
 
 

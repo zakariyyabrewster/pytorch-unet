@@ -53,8 +53,12 @@ def get_args():
 
 
 def get_output_filenames(args):
+    output_dir = 'data/outputs'
+    os.makedirs(output_dir, exist_ok=True)  # Create the directory if it doesn't exist
+
     def _generate_name(fn):
-        return f'{os.path.splitext(fn)[0]}_OUT.png'
+        base = os.path.basename(os.path.splitext(fn)[0])  # Get filename without path and extension
+        return os.path.join(output_dir, f'{base}_pixels0_OUT.png')
 
     return args.output or list(map(_generate_name, args.input))
 
@@ -73,8 +77,7 @@ def mask_to_image(mask: np.ndarray, mask_values):
     for i, v in enumerate(mask_values):
         out[mask == i] = v
 
-    return Image.fromarray(out)
-
+    return Image.fromarray(out.astype(np.uint8) * 255) if mask.ndim == 2 else Image.fromarray(out.astype(np.uint8))
 
 if __name__ == '__main__':
     args = get_args()
@@ -83,7 +86,7 @@ if __name__ == '__main__':
     in_files = args.input
     out_files = get_output_filenames(args)
 
-    net = UNet(n_channels=3, n_classes=args.classes, bilinear=args.bilinear)
+    net = UNet(n_channels=1, n_classes=args.classes, bilinear=args.bilinear)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     logging.info(f'Loading model {args.model}')

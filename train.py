@@ -12,6 +12,7 @@ from pathlib import Path
 from torch import optim
 from torch.utils.data import DataLoader, random_split
 from tqdm import tqdm
+import matplotlib.pyplot as plt 
 
 import wandb
 from evaluate import evaluate
@@ -32,10 +33,10 @@ def train_model(
         learning_rate: float = 1e-5,
         val_percent: float = 0.1,
         save_checkpoint: bool = True,
-        img_scale: float = 0.5,
+        img_scale: float = 1.0,
         amp: bool = False,
         weight_decay: float = 1e-8,
-        momentum: float = 0.999,
+        momentum: float = 0.99,
         gradient_clipping: float = 1.0,
 ):
     # 1. Create dataset
@@ -82,6 +83,8 @@ def train_model(
     global_step = 0
 
     # 5. Begin training
+    losses = []
+
     for epoch in range(1, epochs + 1):
         model.train()
         epoch_loss = 0
@@ -120,6 +123,8 @@ def train_model(
                 pbar.update(images.shape[0])
                 global_step += 1
                 epoch_loss += loss.item()
+                losses.append(loss.item())
+
                 experiment.log({
                     'train loss': loss.item(),
                     'step': global_step,
@@ -165,6 +170,24 @@ def train_model(
             state_dict['mask_values'] = dataset.mask_values
             torch.save(state_dict, str(dir_checkpoint / 'checkpoint_epoch{}.pth'.format(epoch)))
             logging.info(f'Checkpoint {epoch} saved!')
+    
+    # 6. Save the final model
+    if save_checkpoint:
+        Path(dir_checkpoint).mkdir(parents=True, exist_ok=True)
+        state_dict = model.state_dict()
+        state_dict['mask_values'] = dataset.mask_values
+        torch.save(state_dict, str(dir_checkpoint / 'checkpoint_final.pth'))
+        logging.info('Final checkpoint saved!')
+    
+    # Graph the losses
+    plt.plot(losses, label='Training Loss')
+    plt.title('Training Loss')
+    plt.xlabel('Iteration')
+    plt.ylabel('Loss')
+    plt.grid()
+    plt.legend()
+    plt.show()
+    
 
 
 def get_args():
