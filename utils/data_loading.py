@@ -20,7 +20,7 @@ def load_image(filename):
     elif ext in ['.pt', '.pth']:
         return Image.fromarray(torch.load(filename).numpy())
     else:
-        return Image.open(filename)
+        return Image.open(filename).convert('L')
 
 
 def unique_mask_values(idx, mask_dir, mask_suffix):
@@ -88,10 +88,7 @@ class BasicDataset(Dataset):
 
                 img = img[np.newaxis, ...]  # Add channel dimension (1, H, W)
 
-                if (img > 1).any():
-                    img = img / 255.0
-
-                return img
+            return img / 255.0
 
     def __getitem__(self, idx):
         name = self.ids[idx]

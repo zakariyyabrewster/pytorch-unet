@@ -96,19 +96,20 @@ def train_model(
 
                 images = images.to(device=device, dtype=torch.float32, memory_format=torch.channels_last)
                 true_masks = true_masks.to(device=device, dtype=torch.long)
+                true_masks = true_masks.squeeze(1).long()
 
                 with torch.autocast(device.type if device.type != 'mps' else 'cpu', enabled=amp):
                     masks_pred = model(images)
                     if model.n_classes == 1:
                         loss = criterion(masks_pred.squeeze(1), true_masks.float())
-                        loss += dice_loss(F.sigmoid(masks_pred.squeeze(1)), true_masks.float(), multiclass=False)
+                        # loss += dice_loss(F.sigmoid(masks_pred.squeeze(1)), true_masks.float(), multiclass=False)
                     else:
                         loss = criterion(masks_pred, true_masks)
-                        loss += dice_loss(
-                            F.softmax(masks_pred, dim=1).float(),
-                            F.one_hot(true_masks, model.n_classes).permute(0, 3, 1, 2).float(),
-                            multiclass=True
-                        )
+                        # loss += dice_loss(
+                        #     F.softmax(masks_pred, dim=1).float(),
+                        #     F.one_hot(true_masks, model.n_classes).permute(0, 3, 1, 2).float(),
+                        #     multiclass=True
+                        # )
 
                 optimizer.zero_grad(set_to_none=True)
                 grad_scaler.scale(loss).backward()
@@ -130,7 +131,7 @@ def train_model(
                 pbar.set_postfix(**{'loss (batch)': loss.item()})
 
                 # Evaluation round
-                division_step = (n_train // (5 * batch_size))
+                '''division_step = (n_train // (5 * batch_size))
                 if division_step > 0:
                     if global_step % division_step == 0:
                         histograms = {}
@@ -159,7 +160,7 @@ def train_model(
                                 **histograms
                             })
                         except:
-                            pass
+                            pass'''
 
         if save_checkpoint:
             Path(dir_checkpoint).mkdir(parents=True, exist_ok=True)
@@ -183,7 +184,7 @@ def train_model(
     plt.ylabel('Loss')
     plt.grid()
     plt.legend()
-    plt.show()
+    plt.savefig('data/outputs/training_loss.png')
     
 
 
@@ -199,7 +200,7 @@ def get_args():
                         help='Percent of the data that is used as validation (0-100)')
     parser.add_argument('--amp', action='store_true', default=False, help='Use mixed precision')
     parser.add_argument('--bilinear', action='store_true', default=False, help='Use bilinear upsampling')
-    parser.add_argument('--classes', '-c', type=int, default=2, help='Number of classes')
+    parser.add_argument('--classes', '-c', type=int, default=1, help='Number of classes')
 
     return parser.parse_args()
 
