@@ -69,16 +69,7 @@ def get_output_filenames(args):
 
 
 def mask_to_image(mask: np.ndarray, mask_values):
-    if isinstance(mask_values[0], list):
-        out = np.zeros((mask.shape[-2], mask.shape[-1], len(mask_values[0])), dtype=np.uint8)
-    elif mask_values == [0, 1]:
-        out = np.zeros((mask.shape[-2], mask.shape[-1]), dtype=bool)
-    else:
-        out = np.zeros((mask.shape[-2], mask.shape[-1]), dtype=np.uint8)
-
-    if mask.ndim == 3:
-        mask = np.argmax(mask, axis=0)
-
+    out = np.zeros((mask.shape[-2], mask.shape[-1]), dtype=bool)
     for i, v in enumerate(mask_values):
         out[mask == i] = v
 

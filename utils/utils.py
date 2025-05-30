@@ -15,10 +15,9 @@ def plot_img_and_mask(img, mask):
     ax[0].imshow(img, cmap='gray')
     ax[0].axis('off')
 
-    for i in range(classes):
-        ax[i + 1].set_title(f'Mask (class {i})')
-        ax[i + 1].imshow(mask == i, cmap='gray')
-        ax[i + 1].axis('off')
+    ax[1].set_title(f'Mask')
+    ax[1].imshow(mask == 1, cmap='gray')
+    ax[1].axis('off')
 
     plt.tight_layout()
     plt.show()

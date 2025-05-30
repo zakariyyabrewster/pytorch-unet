@@ -10,13 +10,13 @@ def load_mask(path):
 
 class InstanceMetrics:
     def __init__(self, gt, pred):
-        self.gt = gt
-        self.pred = pred
-        self.tp = np.sum(self.gt & self.pred, axis=0)
-        self.tn = np.sum(~self.gt & ~self.pred, axis=0)
-        self.fp = np.sum(~self.gt & self.pred, axis=0)
-        self.fn = np.sum(self.gt & ~self.pred, axis=0)
-        self.union = np.sum(self.gt, axis=0) + np.sum(self.pred, axis=0) - self.tp
+        self.gt = gt.astype(bool)
+        self.pred = pred.astype(bool)
+        self.tp = np.sum(self.gt & self.pred)
+        self.tn = np.sum(~self.gt & ~self.pred)
+        self.fp = np.sum(~self.gt & self.pred)
+        self.fn = np.sum(self.gt & ~self.pred)
+        self.union = np.sum(self.gt) + np.sum(self.pred) - self.tp
         self.beta = 0.3
         self.precision = self.tp / (self.tp + self.fp + 1e-8)
         self.recall = self.tp / (self.tp + self.fn + 1e-8)
@@ -24,6 +24,9 @@ class InstanceMetrics:
         self.tpr = self.recall
         self.fpr = self.fp / (self.fp + self.tn + 1e-8)
         self.iou = self.tp / (self.union + 1e-8)
+    
+    def __str__(self):
+        return f"Precision: {self.precision:.4f}, Recall: {self.recall:.4f}, F-measure: {self.f_measure:.4f} \nTrue Positive Rate (TPR): {self.tpr:.4f}, False Positive Rate (FPR): {self.fpr:.4f}, IoU: {self.iou:.4f}"
 
 class EvalMetrics:
     def __init__(self, metrics_list):
@@ -49,14 +52,16 @@ class EvalMetrics:
         
         mean_precision = np.mean(precision_list)
         mean_recall = np.mean(recall_list)
-        plt.plot(recall_list, precision_list, marker='.', label='Precision-Recall curve')
-        plt.scatter(mean_recall, mean_precision, marker='o', color='red', s=100, label='Mean Precision-Recall')
+        print(f"Mean Precision: {mean_precision:.4f}, Mean Recall: {mean_recall:.4f}, AP: {AP:.4f}")
+        plt.figure()
+        plt.scatter(recall_list, precision_list, marker='.', label='Precision-Recall curve')
+        plt.scatter(mean_recall, mean_precision, marker='o', color='red', s=100, label=f'Mean Precision-Recall: P={mean_precision:.4f}, R={mean_recall:.4f}')
         plt.axhline(y=AP, color='blue', linestyle='--', label=f'AP = {AP:.4f}')
         plt.xlabel('Recall')
         plt.ylabel('Precision')
         plt.title('Precision-Recall Curve')
         plt.legend()
-        plt.show()
+        plt.savefig('metrics/PR_curve.png')
 
     def ROC(self):
         fpr_list = []
@@ -76,14 +81,16 @@ class EvalMetrics:
 
         mean_fpr = np.mean(fpr_list)
         mean_tpr = np.mean(tpr_list)
-        plt.plot(fpr_list, tpr_list, marker='.', label='ROC curve')
-        plt.scatter(mean_fpr, mean_tpr, marker='o', color='red', s=100, label='Mean ROC')
+        print(f"Mean FPR: {mean_fpr:.4f}, Mean TPR: {mean_tpr:.4f}, AUC: {AUC:.4f}")
+        plt.figure()
+        plt.scatter(fpr_list, tpr_list, marker='.', label='ROC curve')
+        plt.scatter(mean_fpr, mean_tpr, marker='o', color='red', s=100, label=f'Mean ROC: TPR={mean_tpr:.4f}, FPR={mean_fpr:.4f}')
         plt.axhline(y=AUC, color='blue', linestyle='--', label=f'AUC = {AUC:.4f}')
         plt.xlabel('False Positive Rate')
         plt.ylabel('True Positive Rate')
         plt.title('ROC Curve')
         plt.legend()
-        plt.show()
+        plt.savefig('metrics/ROC_curve.png')
     
     def display_metrics(self):
         print(f"Mean IoU: {self.mIoU:.4f}")
@@ -92,8 +99,8 @@ class EvalMetrics:
         self.ROC()
 
 if __name__ == '__main__':
-
     model_metrics = []
+    os.makedirs('metrics', exist_ok=True)
     gt_dir = 'data/masks'
     pred_dir = 'data/outputs'
     gt_files = sorted(glob(os.path.join(gt_dir, '*.png')))
