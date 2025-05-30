@@ -11,6 +11,7 @@ from torchvision import transforms
 from utils.data_loading import BasicDataset
 from unet import UNet
 from utils.utils import plot_img_and_mask
+import matplotlib.pyplot as plt
 
 def predict_img(net,
                 full_img,
@@ -30,7 +31,11 @@ def predict_img(net,
         else:
             mask = torch.sigmoid(output) > out_threshold
 
-    return mask[0].long().squeeze().numpy()
+    dummy = mask[0].cpu().squeeze().numpy()
+    plt.imshow(dummy*255, cmap='gray', vmin=0, vmax=255)
+    plt.axis('off')
+    plt.savefig('data/outputs/dummy.png')
+    return dummy
 
 
 def get_args():
@@ -47,7 +52,7 @@ def get_args():
     parser.add_argument('--scale', '-s', type=float, default=0.5,
                         help='Scale factor for the input images')
     parser.add_argument('--bilinear', action='store_true', default=False, help='Use bilinear upsampling')
-    parser.add_argument('--classes', '-c', type=int, default=2, help='Number of classes')
+    parser.add_argument('--classes', '-c', type=int, default=1, help='Number of classes')
     
     return parser.parse_args()
 
