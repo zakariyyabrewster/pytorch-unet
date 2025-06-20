@@ -32,9 +32,7 @@ def predict_img(net,
             mask = torch.sigmoid(output) > out_threshold
 
     dummy = mask[0].cpu().squeeze().numpy()
-    plt.imshow(dummy*255, cmap='gray', vmin=0, vmax=255)
-    plt.axis('off')
-    plt.savefig('data/outputs/dummy.png')
+    
     return dummy
 
 
