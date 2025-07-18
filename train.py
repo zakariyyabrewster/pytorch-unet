@@ -184,6 +184,7 @@ def train_model(
     plt.ylabel('Loss')
     plt.grid()
     plt.legend()
+    os.makedirs('data/outputs', exist_ok=True)
     plt.savefig('data/outputs/training_loss.png')
     
 
