@@ -36,12 +36,13 @@ def unique_mask_values(idx, mask_dir, mask_suffix):
 
 
 class BasicDataset(Dataset):
-    def __init__(self, images_dir: str, mask_dir: str, scale: float = 1.0, mask_suffix: str = '_pixels0'):
+    def __init__(self, images_dir: str, mask_dir: str, scale: float = 1.0, mask_suffix: str = '_pixels0', target_size: tuple = (572, 572)):
         self.images_dir = Path(images_dir)
         self.mask_dir = Path(mask_dir)
         assert 0 < scale <= 1, 'Scale must be between 0 and 1'
         self.scale = scale
         self.mask_suffix = mask_suffix
+        self.target_size = target_size  # (width, height)
 
         self.ids = [splitext(file)[0] for file in listdir(images_dir) if isfile(join(images_dir, file)) and not file.startswith('.')]
         if not self.ids:
@@ -62,33 +63,23 @@ class BasicDataset(Dataset):
         return len(self.ids)
 
     @staticmethod
-    def preprocess(mask_values, pil_img, scale, is_mask):
-        w, h = pil_img.size
-        newW, newH = int(scale * w), int(scale * h)
-        assert newW > 0 and newH > 0, 'Scale is too small, resized images would have no pixel'
-        pil_img = pil_img.resize((newW, newH), resample=Image.NEAREST if is_mask else Image.BICUBIC)
-        img = np.asarray(pil_img)
-
-        if is_mask:
-            mask = np.zeros((newH, newW), dtype=np.int64)
-            for i, v in enumerate(mask_values):
-                if img.ndim == 2:
-                    mask[img == v] = i
-                else:
-                    mask[(img == v).all(-1)] = i
-
-            return mask
-
+    def preprocess(mask_values, pil_img, scale, is_mask, target_size=None):
+        # First resize to target size if specified, otherwise use scale factor
+        if target_size is not None:
+            # target_size is (width, height)
+            pil_img = pil_img.resize(target_size, resample=Image.NEAREST if is_mask else Image.BICUBIC)
         else:
-            if img.ndim == 2:
-                img = img[np.newaxis, ...]
-            else:
-                if img.ndim == 3:
-                    img = img.mean(axis=2).astype(np.uint8)  # Convert RGB to grayscale
+            w, h = pil_img.size
+            newW, newH = int(scale * w), int(scale * h)
+            assert newW > 0 and newH > 0, 'Scale is too small, resized images would have no pixel'
+            pil_img = pil_img.resize((newW, newH), resample=Image.NEAREST if is_mask else Image.BICUBIC)
+        
+        img = np.asarray(pil_img) / 255.0
+        img = img[np.newaxis, ...] if img.ndim == 2 else img
+        return img
 
-                img = img[np.newaxis, ...]  # Add channel dimension (1, H, W)
 
-            return img / 255.0
+        
 
     def __getitem__(self, idx):
         name = self.ids[idx]
@@ -100,13 +91,15 @@ class BasicDataset(Dataset):
         mask = load_image(mask_file[0])
         img = load_image(img_file[0])
 
+        # Ensure image and mask have same initial size before preprocessing
         assert img.size == mask.size, \
             f'Image and mask {name} should be the same size, but are {img.size} and {mask.size}'
 
-        img = self.preprocess(self.mask_values, img, self.scale, is_mask=False)
-        mask = self.preprocess(self.mask_values, mask, self.scale, is_mask=True)
+        # Apply preprocessing with target size
+        img = self.preprocess(self.mask_values, img, self.scale, is_mask=False, target_size=self.target_size)
+        mask = self.preprocess(self.mask_values, mask, self.scale, is_mask=True, target_size=self.target_size)
 
         return {
             'image': torch.as_tensor(img.copy()).float().contiguous(),
-            'mask': torch.as_tensor(mask.copy()).long().contiguous()
-        }
+            'mask': torch.as_tensor(mask.copy()).float().contiguous()
+        }   

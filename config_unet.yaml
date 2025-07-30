@@ -1,0 +1,32 @@
+# Config for UNet Model Training
+
+epochs: 20
+batch_size: 16
+eval_every_n_epochs: 1
+random_seed: 1
+
+dataset:
+  img_dir: './data/imgs'
+  mask_dir: './data/masks'
+  mask_suffix: '_pixels0'
+  target_size: (572, 572)
+
+  
+optim:
+  optimizer: Adam
+  lr: 5e-5
+  weight_decay: 1e-8
+  momentum: 0.99
+
+
+
+dataloader:
+  val_ratio: 0.15
+  test_ratio: 0.15
+
+model:
+  n_channels: 1
+  n_classes: 1
+  bilinear: False
+
+log_dir: './pipeline_results' 

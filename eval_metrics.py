@@ -33,70 +33,99 @@ class EvalMetrics:
         self.metrics_list = metrics_list
         self.mIoU = np.mean([metric.iou for metric in metrics_list])
         self.mFmeasure = np.mean([metric.f_measure for metric in metrics_list])
-    
-    def PrecisionRecall(self):
-        precision_list = []
-        recall_list = []
-        for metric in self.metrics_list:
-            precision_list.append(metric.precision)
-            recall_list.append(metric.recall)
+        self._computePR()
+        self._computeROC()
+        os.makedirs('metrics', exist_ok=True)
 
-        recall_array = np.array(recall_list)
-        precision_array = np.array(precision_list)
+    def _computePR(self):
+        self.precision_list = []
+        self.recall_list = []
+        for metric in self.metrics_list:
+            self.precision_list.append(metric.precision)
+            self.recall_list.append(metric.recall)
+
+        recall_array = np.array(self.recall_list)
+        precision_array = np.array(self.precision_list)
         sort_idx = np.argsort(recall_array)
         recall_array = recall_array[sort_idx]
         precision_array = precision_array[sort_idx]
 
         # Compute area under the curve using trapezoidal integration
-        AP = np.trapz(precision_array, recall_array)
-        
-        mean_precision = np.mean(precision_list)
-        mean_recall = np.mean(recall_list)
-        print(f"Mean Precision: {mean_precision:.4f}, Mean Recall: {mean_recall:.4f}, AP: {AP:.4f}")
-        plt.figure()
-        plt.scatter(recall_list, precision_list, marker='.', label='Precision-Recall curve')
-        plt.scatter(mean_recall, mean_precision, marker='o', color='red', s=100, label=f'Mean Precision-Recall: P={mean_precision:.4f}, R={mean_recall:.4f}')
-        plt.axhline(y=AP, color='blue', linestyle='--', label=f'AP = {AP:.4f}')
-        plt.xlabel('Recall')
-        plt.ylabel('Precision')
-        plt.title('Precision-Recall Curve')
-        plt.legend()
-        plt.savefig('metrics/PR_curve.png')
+        self.AP = np.trapz(precision_array, recall_array)
 
-    def ROC(self):
-        fpr_list = []
-        tpr_list = []
-        for metric in self.metrics_list:
-            fpr_list.append(metric.fpr)
-            tpr_list.append(metric.tpr)
+        mean_precision = np.mean(self.precision_list)
+        mean_recall = np.mean(self.recall_list)
+        self.meanPR = (mean_recall, mean_precision)
+        print(f"Mean Precision: {mean_precision:.4f}, Mean Recall: {mean_recall:.4f}, AP: {self.AP:.4f}")
+    
+    def plot_curves(self):
+        fig, (ax_roc, ax_pr) = plt.subplots(1, 2, figsize=(12, 6))
+
+        # — ROC subplot —
+        ax_roc.scatter(self.fpr_list, self.tpr_list, marker='.', label='ROC curve')
+        ax_roc.scatter(
+            self.meanROC[0], self.meanROC[1],
+            marker='o', color='red', s=100,
+            label=f'Mean ROC: TPR={self.meanROC[1]:.4f}, FPR={self.meanROC[0]:.4f}'
+        )
+        ax_roc.axhline(
+            y=self.AUC, color='blue', linestyle='--',
+            label=f'AUC = {self.AUC:.4f}'
+        )
+        ax_roc.set_xlabel('False Positive Rate')
+        ax_roc.set_ylabel('True Positive Rate')
+        ax_roc.set_title('ROC Curve')
+        ax_roc.legend()
+        ax_roc.grid(True)
+
+        # — Precision–Recall subplot —
+        ax_pr.scatter(self.recall_list, self.precision_list, marker='.', label='PR curve')
+        ax_pr.scatter(
+            self.meanPR[1], self.meanPR[0],
+            marker='o', color='red', s=100,
+            label=f'Mean PR: P={self.meanPR[0]:.4f}, R={self.meanPR[1]:.4f}'
+        )
+        ax_pr.axhline(
+            y=self.AP, color='blue', linestyle='--',
+            label=f'AP = {self.AP:.4f}'
+        )
+        ax_pr.set_xlabel('Recall')
+        ax_pr.set_ylabel('Precision')
+        ax_pr.set_title('Precision–Recall Curve')
+        ax_pr.legend()
+        ax_pr.grid(True)
+
+        plt.tight_layout()
+        fig.savefig('metrics/combined_ROC_PR.png')
+        plt.show()
         
-        fpr_array = np.array(fpr_list)
-        tpr_array = np.array(tpr_list)
+
+    def _computeROC(self):
+        self.fpr_list = []
+        self.tpr_list = []
+        for metric in self.metrics_list:
+            self.fpr_list.append(metric.fpr)
+            self.tpr_list.append(metric.tpr)
+
+        fpr_array = np.array(self.fpr_list)
+        tpr_array = np.array(self.tpr_list)
         sort_idx = np.argsort(fpr_array)
         fpr_array = fpr_array[sort_idx]
         tpr_array = tpr_array[sort_idx]
 
         # Compute area under the curve using trapezoidal integration
-        AUC = np.trapz(tpr_array, fpr_array)
+        self.AUC = np.trapz(tpr_array, fpr_array)
 
-        mean_fpr = np.mean(fpr_list)
-        mean_tpr = np.mean(tpr_list)
-        print(f"Mean FPR: {mean_fpr:.4f}, Mean TPR: {mean_tpr:.4f}, AUC: {AUC:.4f}")
-        plt.figure()
-        plt.scatter(fpr_list, tpr_list, marker='.', label='ROC curve')
-        plt.scatter(mean_fpr, mean_tpr, marker='o', color='red', s=100, label=f'Mean ROC: TPR={mean_tpr:.4f}, FPR={mean_fpr:.4f}')
-        plt.axhline(y=AUC, color='blue', linestyle='--', label=f'AUC = {AUC:.4f}')
-        plt.xlabel('False Positive Rate')
-        plt.ylabel('True Positive Rate')
-        plt.title('ROC Curve')
-        plt.legend()
-        plt.savefig('metrics/ROC_curve.png')
-    
+        mean_fpr = np.mean(self.fpr_list)
+        mean_tpr = np.mean(self.tpr_list)
+        self.meanROC = (mean_fpr, mean_tpr)
+        print(f"Mean FPR: {mean_fpr:.4f}, Mean TPR: {mean_tpr:.4f}, AUC: {self.AUC:.4f}")
+
     def display_metrics(self):
         print(f"Mean IoU: {self.mIoU:.4f}")
         print(f"Mean F-measure: {self.mFmeasure:.4f}")
-        self.PrecisionRecall()
-        self.ROC()
+        self.plotPR()
+        self.plotROC()
 
 if __name__ == '__main__':
     model_metrics = []
