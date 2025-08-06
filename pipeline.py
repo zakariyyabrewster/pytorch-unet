@@ -43,6 +43,7 @@ class Pipeline(object):
         self.config['dataset']['mask_dir'] = os.path.join('datasets', 
                                                          self.config['dataset']['data_name'],
                                                          self.config['dataset']['mask_dir'])
+        self.config['dataset']['target_size'] = tuple(self.config['dataset']['target_size']) if 'target_size' in self.config['dataset'] else (572, 572)
         dataset_config = self.config['dataset'].copy()
         dataset_config.pop('data_name', None)  # Remove data_name from dataset config
 

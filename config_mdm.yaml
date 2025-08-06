@@ -11,8 +11,8 @@ dataset:
   img_dir: 'imgs'
   mask_dir: 'masks'
   mask_suffix: '_pixels0'
-  target_size: (572, 572)
-  
+  target_size: [572, 572]
+
 optim:
   optimizer: RMSprop
   lr: 5e-5
