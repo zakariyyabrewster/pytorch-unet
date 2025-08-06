@@ -43,7 +43,7 @@ class Pipeline(object):
         self.config['dataset']['mask_dir'] = os.path.join('datasets', 
                                                          self.config['dataset']['data_name'],
                                                          self.config['dataset']['mask_dir'])
-        dataset_config = self.config['dataset']
+        dataset_config = self.config['dataset'].copy()
         dataset_config.pop('data_name', None)  # Remove data_name from dataset config
 
         self.dataset = BasicDataset(**dataset_config)
@@ -64,7 +64,7 @@ class Pipeline(object):
         self.train_epochs = list(range(1, config['epochs'] + 1))
         self.val_losses = []
         self.val_epochs = []
-        self.log(f'Pipeline initialized for {self.config["dataset"]["data_name"]} Dataset')
+        self.log(f"Pipeline initialized for {self.config['dataset']['data_name']} Dataset")
         self.log(f'All files will be saved to {self.log_dir}')
         self.log(f'Train set size: {len(train_set)}\nValidation set size: {len(val_set)}\nTest set size: {len(test_set)}')
         self.log("===========================================================")
