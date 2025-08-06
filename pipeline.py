@@ -107,7 +107,9 @@ class Pipeline(object):
     def _train(self):
         best_val_loss = np.inf
         model = UNet(**self.config['model']).to(self.device)
-        optimizer = optim.RMSprop(model.parameters(), **self.config['optim'], foreach=True)
+        optim_config = self.config['optim'].copy()
+        optim_config.pop('optimizer', None)  # Remove optimizer from config if it exists
+        optimizer = optim.RMSprop(model.parameters(), **optim_config, foreach=True)
         self.log(f'Training Model on {self.config["dataset"]["data_name"]}...' )
         self.log("===========================================================")
 
