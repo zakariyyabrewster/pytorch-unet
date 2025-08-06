@@ -36,11 +36,9 @@ def unique_mask_values(idx, mask_dir, mask_suffix):
 
 
 class BasicDataset(Dataset):
-    def __init__(self, img_dir: str, mask_dir: str, scale: float = 1.0, mask_suffix: str = '_pixels0', target_size: tuple = (572, 572)):
+    def __init__(self, img_dir: str, mask_dir: str, mask_suffix: str = '_pixels0', target_size: tuple = (572, 572)):
         self.img_dir = Path(img_dir)
         self.mask_dir = Path(mask_dir)
-        assert 0 < scale <= 1, 'Scale must be between 0 and 1'
-        self.scale = scale
         self.mask_suffix = mask_suffix
         self.target_size = target_size  # (width, height)
 
@@ -63,16 +61,11 @@ class BasicDataset(Dataset):
         return len(self.ids)
 
     @staticmethod
-    def preprocess(mask_values, pil_img, scale, is_mask, target_size=None):
+    def preprocess(self, pil_img, is_mask, target_size=(572, 572)):
         # First resize to target size if specified, otherwise use scale factor
         if target_size is not None:
             # target_size is (width, height)
             pil_img = pil_img.resize(target_size, resample=Image.NEAREST if is_mask else Image.BICUBIC)
-        else:
-            w, h = pil_img.size
-            newW, newH = int(scale * w), int(scale * h)
-            assert newW > 0 and newH > 0, 'Scale is too small, resized images would have no pixel'
-            pil_img = pil_img.resize((newW, newH), resample=Image.NEAREST if is_mask else Image.BICUBIC)
         
         img = np.asarray(pil_img) / 255.0
         img = img[np.newaxis, ...] if img.ndim == 2 else img
@@ -96,8 +89,8 @@ class BasicDataset(Dataset):
             f'Image and mask {name} should be the same size, but are {img.size} and {mask.size}'
 
         # Apply preprocessing with target size
-        img = self.preprocess(self.mask_values, img, self.scale, is_mask=False, target_size=self.target_size)
-        mask = self.preprocess(self.mask_values, mask, self.scale, is_mask=True, target_size=self.target_size)
+        img = self.preprocess(img, is_mask=False, target_size=self.target_size)
+        mask = self.preprocess(mask, is_mask=True, target_size=self.target_size)
 
         return {
             'image': torch.as_tensor(img.copy()).float().contiguous(),
