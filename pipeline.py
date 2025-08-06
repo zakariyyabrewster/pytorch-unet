@@ -106,6 +106,9 @@ class Pipeline(object):
         self.logger.info(message)
 
     def _train(self):
+
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
         best_val_loss = np.inf
         model = UNet(**self.config['model']).to(self.device)
         optim_config = self.config['optim'].copy()
