@@ -61,7 +61,7 @@ class BasicDataset(Dataset):
         return len(self.ids)
 
     @staticmethod
-    def preprocess(self, pil_img, is_mask, target_size=(572, 572)):
+    def preprocess(pil_img, is_mask, target_size=(572, 572)):
         # First resize to target size if specified, otherwise use scale factor
         if target_size is not None:
             # target_size is (width, height)
