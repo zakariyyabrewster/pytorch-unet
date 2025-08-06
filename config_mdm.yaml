@@ -1,0 +1,53 @@
+# Config for UNet Model Training
+
+epochs: 20
+batch_size: 16
+log_every_n_epochs: 1
+eval_every_n_epochs: 1
+random_seed: 1
+
+dataset:
+  data_name: 'SIRST_V2' 
+  img_dir: 'imgs'
+  mask_dir: 'masks'
+  mask_suffix: '_pixels0'
+  target_size: (572, 572)
+  
+optim:
+  optimizer: RMSprop
+  lr: 5e-5
+  weight_decay: 1e-8
+  momentum: 0.99
+
+eval_metrics:
+  n_thresholds: 21
+  plot_curves_per_threshold: False
+  viz: True
+  eval_on_test: True
+
+
+dataloader:
+  val_ratio: 0.15
+  test_ratio: 0.15
+
+kcv:
+  n_folds: 5
+  holdout_ratio: 0.2
+
+
+model:
+  n_channels: 1
+  n_classes: 1
+  bilinear: False
+
+log_dir: 'pipeline_results'
+
+pull_dataset:
+  enabled: False
+  repo_owner: "YimianDai"
+  repo_name: "open-sirst-v2"
+  branch: master
+  img_folder_path: "images/targets"
+  mask_folder_path: "annotations/masks"
+  base_api_url: "https://api.github.com/repos"
+  mask_suffix: "_pixels0"
