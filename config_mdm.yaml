@@ -15,8 +15,8 @@ dataset:
 
 optim:
   optimizer: RMSprop
-  lr: 5e-5
-  weight_decay: 1e-8
+  lr: 0.00005
+  weight_decay: 0.00000001
   momentum: 0.99
 
 eval_metrics:
