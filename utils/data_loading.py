@@ -36,17 +36,17 @@ def unique_mask_values(idx, mask_dir, mask_suffix):
 
 
 class BasicDataset(Dataset):
-    def __init__(self, images_dir: str, mask_dir: str, scale: float = 1.0, mask_suffix: str = '_pixels0', target_size: tuple = (572, 572)):
-        self.images_dir = Path(images_dir)
+    def __init__(self, img_dir: str, mask_dir: str, scale: float = 1.0, mask_suffix: str = '_pixels0', target_size: tuple = (572, 572)):
+        self.img_dir = Path(img_dir)
         self.mask_dir = Path(mask_dir)
         assert 0 < scale <= 1, 'Scale must be between 0 and 1'
         self.scale = scale
         self.mask_suffix = mask_suffix
         self.target_size = target_size  # (width, height)
 
-        self.ids = [splitext(file)[0] for file in listdir(images_dir) if isfile(join(images_dir, file)) and not file.startswith('.')]
+        self.ids = [splitext(file)[0] for file in listdir(self.img_dir) if isfile(join(self.img_dir, file)) and not file.startswith('.')]
         if not self.ids:
-            raise RuntimeError(f'No input file found in {images_dir}, make sure you put your images there')
+            raise RuntimeError(f'No input file found in {self.img_dir}, make sure you put your images there')
 
         logging.info(f'Creating dataset with {len(self.ids)} examples')
         logging.info('Scanning mask files to determine unique values')
@@ -84,7 +84,7 @@ class BasicDataset(Dataset):
     def __getitem__(self, idx):
         name = self.ids[idx]
         mask_file = list(self.mask_dir.glob(name + self.mask_suffix + '.*'))
-        img_file = list(self.images_dir.glob(name + '.*'))
+        img_file = list(self.img_dir.glob(name + '.*'))
 
         assert len(img_file) == 1, f'Either no image or multiple images found for the ID {name}: {img_file}'
         assert len(mask_file) == 1, f'Either no mask or multiple masks found for the ID {name}: {mask_file}'

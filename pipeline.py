@@ -43,8 +43,10 @@ class Pipeline(object):
         self.config['dataset']['mask_dir'] = os.path.join('datasets', 
                                                          self.config['dataset']['data_name'],
                                                          self.config['dataset']['mask_dir'])
+        dataset_config = self.config['dataset']
+        dataset_config.pop('data_name', None)  # Remove data_name from dataset config
 
-        self.dataset = BasicDataset(**self.config['dataset'])
+        self.dataset = BasicDataset(**dataset_config)
         n_val = int(len(self.dataset) * self.config['dataloader']['val_ratio'])
         n_test = int(len(self.dataset) * self.config['dataloader']['test_ratio'])
         n_train = len(self.dataset) - n_val - n_test
